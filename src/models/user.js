@@ -4,48 +4,53 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const Task = require("./task");
 
-const userSchema = new mongoose.Schema({
-	name: {
-		type: String,
-		required: true,
-		trim: true,
-	},
-	age: {
-		type: Number,
-		validate: (value) => {
-			if (value < 0) throw new Error("Age must be a positive number!");
+const userSchema = new mongoose.Schema(
+	{
+		name: {
+			type: String,
+			required: true,
+			trim: true,
 		},
-		default: 0,
-	},
-	email: {
-		type: String, //* makes sure that a email is not reused
-		required: true,
-		unique: true,
-		trim: true,
-		lowercase: true,
-		validate(value) {
-			if (!validator.isEmail(value)) throw new Error("Email is invalid");
+		age: {
+			type: Number,
+			validate: (value) => {
+				if (value < 0) throw new Error("Age must be a positive number!");
+			},
+			default: 0,
 		},
-	},
-	password: {
-		type: String,
-		required: true,
-		trim: true,
-		minlength: 7,
-		validate: (value) => {
-			if (value.toLowerCase().includes("password"))
-				throw new Error("Password cannot be 'password'");
-		},
-	},
-	tokens: [
-		{
-			token: {
-				type: String,
-				required: true,
+		email: {
+			type: String, //* makes sure that a email is not reused
+			required: true,
+			unique: true,
+			trim: true,
+			lowercase: true,
+			validate(value) {
+				if (!validator.isEmail(value)) throw new Error("Email is invalid");
 			},
 		},
-	],
-});
+		password: {
+			type: String,
+			required: true,
+			trim: true,
+			minlength: 7,
+			validate: (value) => {
+				if (value.toLowerCase().includes("password"))
+					throw new Error("Password cannot be 'password'");
+			},
+		},
+		tokens: [
+			{
+				token: {
+					type: String,
+					required: true,
+				},
+			},
+		],
+	},
+	{
+		timestamps: true, //* tracking creation and updating
+	}
+);
 
 //* functions
 userSchema.virtual("tasks", {
