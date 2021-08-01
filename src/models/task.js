@@ -1,5 +1,4 @@
 const mongoose = require("mongoose");
-const bcrypt = require("bcrypt");
 
 const taskSchema = new mongoose.Schema({
 	description: {
@@ -11,8 +10,13 @@ const taskSchema = new mongoose.Schema({
 		type: Boolean,
 		default: false,
 	},
+	owner: {
+		type: mongoose.Schema.Types.ObjectId,
+		required: true,
+		ref: "User", //* model name
+	},
 });
 
-const Tasks = mongoose.model("Tasks", taskSchema);
+const Tasks = mongoose.model("Task", taskSchema);
 
 module.exports = Tasks;
