@@ -3,5 +3,5 @@
 ## Description
 
 A simple node.js application. Uses mongoDB, mongoose and express to store data,
-create users and tasks
+create users and tasks \n
 Lacks any **UI**
