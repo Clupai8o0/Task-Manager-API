@@ -2,6 +2,9 @@ const express = require("express");
 const router = new express.Router();
 const User = require("../models/user.js");
 const auth = require("../middleware/auth.js");
+const multer = require("multer");
+const sharp = require("sharp");
+const { sendWelcomeEmail, sendCancelEmail } = require("../emails/account");
 
 // ? getting users profile
 router.get("/user/me", auth, async (req, res) => {
@@ -47,6 +50,7 @@ router.post("/add/user", async (req, res) => {
 	const user = new User(req.body);
 	try {
 		await user.save();
+		sendWelcomeEmail(user.email, user.name);
 		const token = await user.generateAuthToken();
 		res.status(201).send({
 			user,
@@ -54,6 +58,52 @@ router.post("/add/user", async (req, res) => {
 		});
 	} catch (err) {
 		res.status(400).send(err);
+	}
+});
+
+//? user pfp
+const upload = multer({
+	//? when dest is removed the file is returned
+	limits: {
+		fileSize: 1000000, //* it works on the basis of bytes. 1,000,000 bytes is 1mb
+	},
+	fileFilter(req, file, cb) {
+		if (!file.originalname.match(/\.(jpg|png|jpeg)$/))
+			return cb(new Error("File must be of the format jpg or png"));
+		cb(undefined, true);
+	},
+});
+router.post(
+	"/users/me/avatar",
+	auth,
+	upload.single("avatar"),
+	async (req, res) => {
+		const buffer = await sharp(req.file.buffer)
+			.resize({ width: 250, height: 250 })
+			.png()
+			.toBuffer(); //* conversions
+		req.user.avatar = buffer; //* setting the avatar
+		await req.user.save();
+		res.status(200).send();
+	},
+	(error, req, res, next) => {
+		res.status(400).send({ error: error.message });
+	}
+);
+router.delete("/delete/users/me/avatar", auth, async (req, res) => {
+	req.user.avatar = undefined;
+	await req.user.save();
+	res.status(200).send();
+});
+router.get("/users/:id/avatar", async (req, res) => {
+	try {
+		const user = await User.findById(req.params.id);
+		if (!user || !user.avatar) throw new Error();
+
+		res.set("Content-Type", "image/png");
+		res.send(user.avatar);
+	} catch (e) {
+		res.status(404).send();
 	}
 });
 
@@ -80,6 +130,7 @@ router.patch("/update/user/me", auth, async (req, res) => {
 //? deleting user
 router.delete("/delete/user/me", auth, async (req, res) => {
 	try {
+		sendCancelEmail(req.user.email, req.user.name);
 		await req.user.remove();
 		res.send(req.user);
 	} catch (e) {
